@@ -1,6 +1,11 @@
 # XYZ Automotive
 
-A high-performance full-stack monorepo for managing automotive parts, categories, and brands. Built with speed and type-safety as core principles.
+A high-performance full-stack monorepo for managing automotive car products, categories, and brands. Built with speed and type-safety as core principles.
+
+## 🌐 Deployment Links
+
+- **Frontend:** [https://xyz-automotive.vercel.app/](https://xyz-automotive.vercel.app/)
+- **Backend (API Docs):** [https://api-xyz-automotive.vercel.app/openapi](https://api-xyz-automotive.vercel.app/openapi)
 
 ## 🚀 Tech Stack
 
