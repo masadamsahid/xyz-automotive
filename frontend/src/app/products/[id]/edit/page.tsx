@@ -126,7 +126,7 @@ export default async function EditProductPage({
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="price" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Price ($)</Label>
+              <Label htmlFor="price" className="text-xs font-black uppercase tracking-widest text-muted-foreground">IDR</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black">$</span>
                 <Input
@@ -135,7 +135,7 @@ export default async function EditProductPage({
                   type="number"
                   step="0.01"
                   required
-                  defaultValue={(product.price / 100).toFixed(2)}
+                  defaultValue={(product.price)}
                   className="bg-background h-12 pl-8 text-sm font-mono font-bold border-2 focus-visible:ring-primary/20"
                 />
               </div>

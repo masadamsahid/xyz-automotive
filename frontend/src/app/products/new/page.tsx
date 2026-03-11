@@ -108,9 +108,9 @@ export default async function NewProductPage() {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="price" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Price ($)</Label>
+              <Label htmlFor="price" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Price (IDR)</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black">Rp</span>
                 <Input
                   id="price"
                   name="price"

@@ -13,9 +13,10 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Edit2 } from "lucide-react";
+import { Edit2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { DeleteProductButton } from "@/components/DeleteProductButton";
 import { revalidatePath } from "next/cache";
+import moment from "moment";
 
 interface SearchParams {
   search?: string;
@@ -24,6 +25,8 @@ interface SearchParams {
   categoryId?: string;
   brandId?: string;
   page?: string;
+  sort?: string;
+  order?: string;
 }
 
 export default async function ProductsPage({
@@ -33,6 +36,8 @@ export default async function ProductsPage({
 }) {
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
+  const currentSort = params.sort || "createdAt";
+  const currentOrder = params.order || "desc";
 
   const { data, error } = await client.products.get({
     query: {
@@ -43,6 +48,8 @@ export default async function ProductsPage({
       brandId: params.brandId ? Number(params.brandId) : undefined,
       page: currentPage,
       limit: 10,
+      sort: currentSort,
+      order: currentOrder,
     },
   });
 
@@ -52,15 +59,26 @@ export default async function ProductsPage({
   const { data: categories } = await client.categories.get({ query: { limit: 100 } });
   const { data: brands } = await client.brands.get({ query: { limit: 100 } });
 
-  const createPageUrl = (page: number) => {
-    const newParams = new URLSearchParams();
-    if (params.search) newParams.set("search", params.search);
-    if (params.minPrice) newParams.set("minPrice", params.minPrice);
-    if (params.maxPrice) newParams.set("maxPrice", params.maxPrice);
-    if (params.categoryId) newParams.set("categoryId", params.categoryId);
-    if (params.brandId) newParams.set("brandId", params.brandId);
-    newParams.set("page", page.toString());
-    return `/products?${newParams.toString()}`;
+  const createQueryUrl = (newParams: Record<string, string | number | undefined>) => {
+    const updatedParams = new URLSearchParams();
+    if (params.search) updatedParams.set("search", params.search);
+    if (params.minPrice) updatedParams.set("minPrice", params.minPrice);
+    if (params.maxPrice) updatedParams.set("maxPrice", params.maxPrice);
+    if (params.categoryId) updatedParams.set("categoryId", params.categoryId);
+    if (params.brandId) updatedParams.set("brandId", params.brandId);
+    updatedParams.set("page", currentPage.toString());
+    updatedParams.set("sort", currentSort);
+    updatedParams.set("order", currentOrder);
+
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value === undefined) {
+        updatedParams.delete(key);
+      } else {
+        updatedParams.set(key, value.toString());
+      }
+    });
+
+    return `/products?${updatedParams.toString()}`;
   };
 
   async function deleteProduct(id: number) {
@@ -70,6 +88,25 @@ export default async function ProductsPage({
       throw new Error("Failed to delete product");
     }
     revalidatePath("/products");
+  }
+
+  function SortLink({ column, label }: { column: string; label: string }) {
+    const isActive = currentSort === column;
+    const nextOrder = isActive && currentOrder === "asc" ? "desc" : "asc";
+    
+    return (
+      <Link 
+        href={createQueryUrl({ sort: column, order: nextOrder, page: 1 })}
+        className="flex items-center gap-1 hover:text-primary transition-colors"
+      >
+        {label}
+        {isActive ? (
+          currentOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-30" />
+        )}
+      </Link>
+    );
   }
 
   return (
@@ -98,7 +135,7 @@ export default async function ProductsPage({
             <Input
               id="search"
               name="search"
-              placeholder="Name..."
+              placeholder="Part name..."
               defaultValue={params.search}
               className="bg-background"
             />
@@ -175,11 +212,18 @@ export default async function ProductsPage({
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[300px] font-bold uppercase text-xs">Name</TableHead>
-              <TableHead className="font-bold uppercase text-xs">Price</TableHead>
-              <TableHead className="font-bold uppercase text-xs">Stock</TableHead>
+              <TableHead className="w-[250px] font-bold uppercase text-xs">Name</TableHead>
+              <TableHead className="font-bold uppercase text-xs">
+                <SortLink column="price" label="Price" />
+              </TableHead>
+              <TableHead className="font-bold uppercase text-xs">
+                <SortLink column="stock" label="Stock" />
+              </TableHead>
               <TableHead className="font-bold uppercase text-xs">Category</TableHead>
               <TableHead className="font-bold uppercase text-xs">Brand</TableHead>
+              <TableHead className="font-bold uppercase text-xs">
+                <SortLink column="createdAt" label="Created At" />
+              </TableHead>
               <TableHead className="font-bold uppercase text-xs text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -195,8 +239,12 @@ export default async function ProductsPage({
                       {product.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="font-mono text-primary font-bold">
-                    ${(product.price / 100).toFixed(2)}
+                  <TableCell className="font-mono text-primary font-bold whitespace-nowrap">
+                    {new Intl.NumberFormat('id-ID', {
+                      style: 'currency',
+                      currency: 'IDR',
+                      minimumFractionDigits: 0
+                    }).format(product.price)}
                   </TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs font-bold ${
@@ -215,6 +263,13 @@ export default async function ProductsPage({
                       {brands?.data?.find((b: any) => b.id === product.brandId)?.name || "-"}
                     </span>
                   </TableCell>
+                  <TableCell 
+                    className="text-xs font-mono text-muted-foreground whitespace-nowrap"
+                    title={moment.utc(product.createdAt).format("DD-MMM-YYYY HH:mm:ss") + " UTC"}
+                  >
+                    {moment.utc(product.createdAt).fromNow()}
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Link
@@ -237,7 +292,7 @@ export default async function ProductsPage({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
+                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground italic">
                   {error ? "Error loading products" : "No products found."}
                 </TableCell>
               </TableRow>
@@ -253,7 +308,7 @@ export default async function ProductsPage({
             </p>
             <div className="flex gap-2">
               <Link
-                href={createPageUrl(currentPage - 1)}
+                href={createQueryUrl({ page: currentPage - 1 })}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "sm" }),
                   currentPage <= 1 && "pointer-events-none opacity-50"
@@ -262,7 +317,7 @@ export default async function ProductsPage({
                 Previous
               </Link>
               <Link
-                href={createPageUrl(currentPage + 1)}
+                href={createQueryUrl({ page: currentPage + 1 })}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "sm" }),
                   currentPage >= meta.totalPages && "pointer-events-none opacity-50"

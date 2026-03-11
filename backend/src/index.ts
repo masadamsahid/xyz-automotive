@@ -2,11 +2,13 @@ import { Elysia, t } from "elysia";
 import openapi from "@elysiajs/openapi";
 import { db } from "./db";
 import { brands, categories, products } from "./db/schema";
-import { eq, and, gte, lte, or, ilike, count } from "drizzle-orm";
+import { eq, and, gte, lte, or, ilike, count, desc, asc } from "drizzle-orm";
 
 const paginationSchema = {
   page: t.Optional(t.Numeric({ default: 1, minimum: 1 })),
   limit: t.Optional(t.Numeric({ default: 10, minimum: 1, maximum: 100 })),
+  sort: t.Optional(t.String({ default: "createdAt" })),
+  order: t.Optional(t.String({ default: "desc" })),
 };
 
 const app = new Elysia()
@@ -180,7 +182,7 @@ const app = new Elysia()
       .get("/", async ({ query }) => {
         const { 
           minPrice, maxPrice, minStock, maxStock, categoryId, brandId, search,
-          page = 1, limit = 10 
+          page = 1, limit = 10, sort = "createdAt", order = "desc"
         } = query;
 
         const filters = [];
@@ -202,8 +204,11 @@ const app = new Elysia()
         const whereClause = filters.length > 0 ? and(...filters) : undefined;
         const offset = (page - 1) * limit;
 
+        const sortColumn = (products as any)[sort] || products.createdAt;
+        const orderBy = order === "asc" ? asc(sortColumn) : desc(sortColumn);
+
         const [totalCount] = await db.select({ value: count() }).from(products).where(whereClause);
-        const data = await db.select().from(products).where(whereClause).limit(limit).offset(offset);
+        const data = await db.select().from(products).where(whereClause).limit(limit).offset(offset).orderBy(orderBy);
 
         return {
           data,
@@ -212,6 +217,8 @@ const app = new Elysia()
             page,
             limit,
             totalPages: Math.ceil(totalCount.value / limit),
+            sort,
+            order,
           }
         };
       }, {

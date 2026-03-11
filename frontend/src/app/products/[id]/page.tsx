@@ -89,11 +89,15 @@ export default async function ProductDetailPage({
             <div className="space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="h-4 w-4 text-primary" />
+                  {/* <span className="text-primary font-bold">Rp</span> */}
                   <span className="text-xs font-black uppercase tracking-tighter text-muted-foreground">Current Price</span>
                 </div>
                 <p className="text-4xl font-black tracking-tighter text-primary">
-                  ${(product.price / 100).toFixed(2)}
+                  {new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                  }).format(product.price)}
                 </p>
               </div>
 
