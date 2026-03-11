@@ -65,6 +65,7 @@ The application runs on `http://localhost:3001` (or next available port).
 - **Connection:** Uses `postgres.js` as the driver. Environment variable `DATABASE_URL` is used for the connection string.
 
 ### Frontend Development
+- **Core Styles:** Do NOT modify `frontend/src/app/globals.css`. All styling should be done via Tailwind utility classes and theme variables defined in that file.
 - **Server Components First:** Prioritize using React Server Components (RSC) for all parts of the application.
 - **Client Component Restrictions:** 
   - Do NOT use the `'use client'` directive in `page.tsx` or `layout.tsx`.
