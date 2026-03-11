@@ -1,12 +1,4 @@
-import { pgTable, serial, text, varchar, timestamp } from "drizzle-orm/pg-core";
-
-// export const users = pgTable("users", {
-//   id: serial("id").primaryKey(),
-//   fullName: text("full_name"),
-//   email: varchar("email", { length: 256 }).unique().notNull(),
-//   createdAt: timestamp("created_at").defaultNow().notNull(),
-// });
-
+import { pgTable, serial, text, varchar, timestamp, integer } from "drizzle-orm/pg-core";
 
 // categories
 export const categories = pgTable("categories", {
@@ -32,9 +24,9 @@ export const products = pgTable("products", {
   name: varchar("name", { length: 256 }).notNull(),
   slug: varchar("slug", { length: 256 }).unique().notNull(),
   description: text("description"),
-  price: serial("price").notNull(),
-  stock: serial("stock").default(0).notNull(),
-  categoryId: serial("category_id").references(() => categories.id),
-  brandId: serial("brand_id").references(() => brands.id),
+  price: integer("price").notNull(),
+  stock: integer("stock").default(0).notNull(),
+  categoryId: integer("category_id").references(() => categories.id),
+  brandId: integer("brand_id").references(() => brands.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
