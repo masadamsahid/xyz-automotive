@@ -1,15 +1,11 @@
 import { client } from "@/lib/api/edent-treaty";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface SearchParams {
   search?: string;
@@ -17,6 +13,7 @@ interface SearchParams {
   maxPrice?: string;
   categoryId?: string;
   brandId?: string;
+  page?: string;
 }
 
 export default async function ProductsPage({
@@ -25,19 +22,36 @@ export default async function ProductsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+  const currentPage = Number(params.page) || 1;
 
-  const { data: products, error } = await client.products.get({
+  const { data, error } = await client.products.get({
     query: {
       search: params.search,
       minPrice: params.minPrice ? Number(params.minPrice) : undefined,
       maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
       categoryId: params.categoryId ? Number(params.categoryId) : undefined,
       brandId: params.brandId ? Number(params.brandId) : undefined,
+      page: currentPage,
+      limit: 10,
     },
   });
 
-  const { data: categories } = await client.categories.get();
-  const { data: brands } = await client.brands.get();
+  const products = data?.data;
+  const meta = data?.meta;
+
+  const { data: categories } = await client.categories.get({ query: { limit: 100 } });
+  const { data: brands } = await client.brands.get({ query: { limit: 100 } });
+
+  const createPageUrl = (page: number) => {
+    const newParams = new URLSearchParams();
+    if (params.search) newParams.set("search", params.search);
+    if (params.minPrice) newParams.set("minPrice", params.minPrice);
+    if (params.maxPrice) newParams.set("maxPrice", params.maxPrice);
+    if (params.categoryId) newParams.set("categoryId", params.categoryId);
+    if (params.brandId) newParams.set("brandId", params.brandId);
+    newParams.set("page", page.toString());
+    return `/products?${newParams.toString()}`;
+  };
 
   return (
     <div className="space-y-8">
@@ -95,7 +109,7 @@ export default async function ProductsPage({
               defaultValue={params.categoryId}
             >
               <option value="">All Categories</option>
-              {categories?.map((cat) => (
+              {categories?.data?.map((cat: any) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
@@ -111,7 +125,7 @@ export default async function ProductsPage({
               defaultValue={params.brandId}
             >
               <option value="">All Brands</option>
-              {brands?.map((brand) => (
+              {brands?.data?.map((brand: any) => (
                 <option key={brand.id} value={brand.id}>
                   {brand.name}
                 </option>
@@ -122,7 +136,14 @@ export default async function ProductsPage({
             <Button type="submit" className="flex-1 font-bold">
               FILTER
             </Button>
-            <Button render={<a href="/products">RESET</a>} variant="outline" nativeButton={false} className="px-3"/>
+            <Button
+              nativeButton={false}
+              render={
+                <Link href="/products">
+                  RESET
+                </Link>
+              }
+            />
           </div>
         </form>
       </div>
@@ -149,20 +170,19 @@ export default async function ProductsPage({
                     ${(product.price / 100).toFixed(2)}
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${
-                      product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
                       {product.stock}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span className="text-xs px-2 py-0.5 rounded-full border border-border bg-muted">
-                      {categories?.find((c) => c.id === product.categoryId)?.name || "-"}
+                      {categories?.data?.find((c: any) => c.id === product.categoryId)?.name || "-"}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span className="font-bold text-xs uppercase text-muted-foreground">
-                      {brands?.find((b) => b.id === product.brandId)?.name || "-"}
+                      {brands?.data?.find((b: any) => b.id === product.brandId)?.name || "-"}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -170,12 +190,41 @@ export default async function ProductsPage({
             ) : (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">
-                  {error ? "Error loading products from database" : "No products matching your search criteria."}
+                  {error ? "Error loading products" : "No products found."}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+
+        {meta && meta.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-border bg-muted/30 px-6 py-4">
+            <p className="text-sm text-muted-foreground">
+              Showing page <span className="font-bold text-foreground">{meta.page}</span> of{" "}
+              <span className="font-bold text-foreground">{meta.totalPages}</span> ({meta.total} total)
+            </p>
+            <div className="flex gap-2">
+              <Link
+                href={createPageUrl(currentPage - 1)}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  currentPage <= 1 && "pointer-events-none opacity-50"
+                )}
+              >
+                Previous
+              </Link>
+              <Link
+                href={createPageUrl(currentPage + 1)}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  currentPage >= meta.totalPages && "pointer-events-none opacity-50"
+                )}
+              >
+                Next
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

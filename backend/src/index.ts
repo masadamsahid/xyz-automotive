@@ -2,7 +2,12 @@ import { Elysia, t } from "elysia";
 import openapi from "@elysiajs/openapi";
 import { db } from "./db";
 import { brands, categories, products } from "./db/schema";
-import { eq, and, gte, lte, or, ilike } from "drizzle-orm";
+import { eq, and, gte, lte, or, ilike, count } from "drizzle-orm";
+
+const paginationSchema = {
+  page: t.Optional(t.Numeric({ default: 1, minimum: 1 })),
+  limit: t.Optional(t.Numeric({ default: 10, minimum: 1, maximum: 100 })),
+};
 
 const app = new Elysia()
   .use(openapi({
@@ -32,9 +37,22 @@ const app = new Elysia()
         }),
         detail: { tags: ["categories"] }
       })
-      .get("/", async () => {
-        return await db.select().from(categories);
+      .get("/", async ({ query: { page = 1, limit = 10 } }) => {
+        const offset = (page - 1) * limit;
+        const [totalCount] = await db.select({ value: count() }).from(categories);
+        const data = await db.select().from(categories).limit(limit).offset(offset);
+        
+        return {
+          data,
+          meta: {
+            total: totalCount.value,
+            page,
+            limit,
+            totalPages: Math.ceil(totalCount.value / limit),
+          }
+        };
       }, {
+        query: t.Object(paginationSchema),
         detail: { tags: ["categories"] }
       })
       .get("/:id", async ({ params: { id } }) => {
@@ -87,9 +105,22 @@ const app = new Elysia()
         }),
         detail: { tags: ["brands"] }
       })
-      .get("/", async () => {
-        return await db.select().from(brands);
+      .get("/", async ({ query: { page = 1, limit = 10 } }) => {
+        const offset = (page - 1) * limit;
+        const [totalCount] = await db.select({ value: count() }).from(brands);
+        const data = await db.select().from(brands).limit(limit).offset(offset);
+
+        return {
+          data,
+          meta: {
+            total: totalCount.value,
+            page,
+            limit,
+            totalPages: Math.ceil(totalCount.value / limit),
+          }
+        };
       }, {
+        query: t.Object(paginationSchema),
         detail: { tags: ["brands"] }
       })
       .get("/:id", async ({ params: { id } }) => {
@@ -147,7 +178,10 @@ const app = new Elysia()
         detail: { tags: ["products"] }
       })
       .get("/", async ({ query }) => {
-        const { minPrice, maxPrice, minStock, maxStock, categoryId, brandId, search } = query;
+        const { 
+          minPrice, maxPrice, minStock, maxStock, categoryId, brandId, search,
+          page = 1, limit = 10 
+        } = query;
 
         const filters = [];
 
@@ -165,9 +199,24 @@ const app = new Elysia()
           ));
         }
 
-        return await db.select().from(products).where(and(...filters));
+        const whereClause = filters.length > 0 ? and(...filters) : undefined;
+        const offset = (page - 1) * limit;
+
+        const [totalCount] = await db.select({ value: count() }).from(products).where(whereClause);
+        const data = await db.select().from(products).where(whereClause).limit(limit).offset(offset);
+
+        return {
+          data,
+          meta: {
+            total: totalCount.value,
+            page,
+            limit,
+            totalPages: Math.ceil(totalCount.value / limit),
+          }
+        };
       }, {
         query: t.Object({
+          ...paginationSchema,
           minPrice: t.Optional(t.Numeric()),
           maxPrice: t.Optional(t.Numeric()),
           minStock: t.Optional(t.Numeric()),
