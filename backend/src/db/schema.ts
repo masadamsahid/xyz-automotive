@@ -6,7 +6,7 @@ export const categories = pgTable("categories", {
   name: varchar("name", { length: 256 }).notNull(),
   slug: varchar("slug", { length: 256 }).unique().notNull(),
   description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // brands
@@ -14,7 +14,7 @@ export const brands = pgTable("brands", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   slug: varchar("slug", { length: 256 }).unique().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 
@@ -28,5 +28,5 @@ export const products = pgTable("products", {
   stock: integer("stock").default(0).notNull(),
   categoryId: integer("category_id").references(() => categories.id),
   brandId: integer("brand_id").references(() => brands.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
