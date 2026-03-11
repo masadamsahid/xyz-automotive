@@ -292,5 +292,11 @@ const app = new Elysia()
 // );
 
 export type BackendApp = typeof app;
+const PORT = Bun.env.PORT || 3000;
 
-export default app;
+console.log(`🚀 Server is running on port ${PORT}`);
+
+export default {
+  port: PORT,
+  fetch: app.handle,
+}
