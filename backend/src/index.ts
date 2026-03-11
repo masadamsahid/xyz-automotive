@@ -187,6 +187,15 @@ const app = new Elysia()
         }),
         detail: { tags: ["products"] }
       })
+      .get("/slug/:slug", async ({ params: { slug } }) => {
+        const result = await db.select().from(products).where(eq(products.slug, slug));
+        return result[0];
+      }, {
+        params: t.Object({
+          slug: t.String()
+        }),
+        detail: { tags: ["products"] }
+      })
       .patch("/:id", async ({ params: { id }, body }) => {
         const result = await db.update(products)
           .set(body as any)
