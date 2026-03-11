@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "XYZ Automotive",
-  description: "Automotive parts management system",
+  description: "Car management system",
 };
 
 export default function RootLayout({

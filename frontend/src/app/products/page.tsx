@@ -1,11 +1,21 @@
 import { client } from "@/lib/api/edent-treaty";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Edit2 } from "lucide-react";
+import { DeleteProductButton } from "@/components/DeleteProductButton";
+import { revalidatePath } from "next/cache";
 
 interface SearchParams {
   search?: string;
@@ -53,12 +63,27 @@ export default async function ProductsPage({
     return `/products?${newParams.toString()}`;
   };
 
+  async function deleteProduct(id: number) {
+    "use server";
+    const { error } = await client.products({ id }).delete();
+    if (error) {
+      throw new Error("Failed to delete product");
+    }
+    revalidatePath("/products");
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-black tracking-tighter text-primary">
           PRODUCTS
         </h1>
+        <Link
+          href="/products/new"
+          className={cn(buttonVariants({ variant: "default" }), "font-black uppercase tracking-tighter px-6")}
+        >
+          Insert New Product
+        </Link>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -73,7 +98,7 @@ export default async function ProductsPage({
             <Input
               id="search"
               name="search"
-              placeholder="Part name..."
+              placeholder="Name..."
               defaultValue={params.search}
               className="bg-background"
             />
@@ -136,14 +161,12 @@ export default async function ProductsPage({
             <Button type="submit" className="flex-1 font-bold">
               FILTER
             </Button>
-            <Button
-              nativeButton={false}
-              render={
-                <Link href="/products">
-                  RESET
-                </Link>
-              }
-            />
+            <Link 
+              href="/products" 
+              className={cn(buttonVariants({ variant: "outline" }), "px-3")}
+            >
+              RESET
+            </Link>
           </div>
         </form>
       </div>
@@ -157,6 +180,7 @@ export default async function ProductsPage({
               <TableHead className="font-bold uppercase text-xs">Stock</TableHead>
               <TableHead className="font-bold uppercase text-xs">Category</TableHead>
               <TableHead className="font-bold uppercase text-xs">Brand</TableHead>
+              <TableHead className="font-bold uppercase text-xs text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -164,14 +188,20 @@ export default async function ProductsPage({
               products.map((product) => (
                 <TableRow key={product.id} className="hover:bg-muted/30">
                   <TableCell className="font-medium tracking-tight">
-                    {product.name}
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {product.name}
+                    </Link>
                   </TableCell>
                   <TableCell className="font-mono text-primary font-bold">
                     ${(product.price / 100).toFixed(2)}
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
                       {product.stock}
                     </span>
                   </TableCell>
@@ -185,11 +215,29 @@ export default async function ProductsPage({
                       {brands?.data?.find((b: any) => b.id === product.brandId)?.name || "-"}
                     </span>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        href={`/products/${product.id}/edit`}
+                        className={cn(
+                          buttonVariants({ variant: "outline", size: "sm" }),
+                          "h-8 w-8 p-0 rounded-md"
+                        )}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Link>
+                      <DeleteProductButton 
+                        productId={product.id} 
+                        productName={product.name} 
+                        onDelete={deleteProduct} 
+                      />
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">
+                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
                   {error ? "Error loading products" : "No products found."}
                 </TableCell>
               </TableRow>

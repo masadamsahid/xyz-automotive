@@ -1,6 +1,6 @@
 # Project Context: XYZ Automotive
 
-This is a full-stack monorepo for **XYZ Automotive**, a platform for managing automotive parts and products. The project consists of a high-performance backend built with **Elysia.js** and a modern frontend using **Next.js**.
+This is a full-stack monorepo for **XYZ Automotive**, a platform for managing automotive products. The project consists of a high-performance backend built with **Elysia.js** and a modern frontend using **Next.js**.
 
 ## Project Structure
 
