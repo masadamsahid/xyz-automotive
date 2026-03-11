@@ -287,8 +287,10 @@ const app = new Elysia()
   ))
   .listen(3000);
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+// console.log(
+//   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+// );
 
 export type BackendApp = typeof app;
+
+export default app;
