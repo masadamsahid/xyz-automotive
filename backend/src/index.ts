@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import openapi from "@elysiajs/openapi";
 import { db } from "./db";
 import { brands, categories, products } from "./db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte, or, ilike } from "drizzle-orm";
 
 const app = new Elysia()
   .use(openapi({
@@ -146,9 +146,36 @@ const app = new Elysia()
         }),
         detail: { tags: ["products"] }
       })
-      .get("/", async () => {
-        return await db.select().from(products);
+      .get("/", async ({ query }) => {
+        const { minPrice, maxPrice, minStock, maxStock, categoryId, brandId, search } = query;
+
+        const filters = [];
+
+        if (minPrice !== undefined) filters.push(gte(products.price, minPrice));
+        if (maxPrice !== undefined) filters.push(lte(products.price, maxPrice));
+        if (minStock !== undefined) filters.push(gte(products.stock, minStock));
+        if (maxStock !== undefined) filters.push(lte(products.stock, maxStock));
+        if (categoryId !== undefined) filters.push(eq(products.categoryId, categoryId));
+        if (brandId !== undefined) filters.push(eq(products.brandId, brandId));
+        if (search) {
+          filters.push(or(
+            ilike(products.name, `%${search}%`),
+            ilike(products.slug, `%${search}%`),
+            ilike(products.description, `%${search}%`)
+          ));
+        }
+
+        return await db.select().from(products).where(and(...filters));
       }, {
+        query: t.Object({
+          minPrice: t.Optional(t.Numeric()),
+          maxPrice: t.Optional(t.Numeric()),
+          minStock: t.Optional(t.Numeric()),
+          maxStock: t.Optional(t.Numeric()),
+          categoryId: t.Optional(t.Numeric()),
+          brandId: t.Optional(t.Numeric()),
+          search: t.Optional(t.String()),
+        }),
         detail: { tags: ["products"] }
       })
       .get("/:id", async ({ params: { id } }) => {
