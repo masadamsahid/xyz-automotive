@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import openapi from "@elysiajs/openapi";
+import cors from "@elysiajs/cors";
 import { db } from "./db";
 import { brands, categories, products } from "./db/schema";
 import { eq, and, gte, lte, or, ilike, count, desc, asc } from "drizzle-orm";
@@ -12,6 +13,7 @@ const paginationSchema = {
 };
 
 const app = new Elysia()
+  .use(cors())
   .use(openapi({
     documentation: {
       info: {
